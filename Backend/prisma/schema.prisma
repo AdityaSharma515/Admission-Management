@@ -1,0 +1,177 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+enum Role {
+  STUDENT
+  VERIFIER
+  ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum SeatSource {
+  JOSAA
+  CSAB
+}
+
+enum Category {
+  OPEN
+  OPEN_PWD
+  EWS
+  EWS_PWD
+  SC
+  SC_PWD
+  ST
+  ST_PWD
+  OBC_NCL
+  OBC_NCL_PWD
+}
+
+enum AdmissionStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_VERIFICATION
+  APPROVED
+  REJECTED
+  CORRECTION_REQUIRED
+}
+
+enum DocumentType {
+  PASSPORT_PHOTO
+  PROVISIONAL_ADMISSION_LETTER
+  X_MARKSHEET
+  XII_MARKSHEET
+  JEE_RANK_CARD
+  CATEGORY_CERTIFICATE
+  MEDICAL_CERTIFICATE
+  INSTITUTE_FEE_RECEIPT
+  HOSTEL_FEE_RECEIPT
+  UNDERTAKING
+  CLASS_XII_ELIGIBILITY_FORM
+  AADHAR_CARD
+}
+
+enum DocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ================================
+// USER MODEL
+// ================================
+
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  password    String
+  role        Role     @default(STUDENT)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  studentProfile StudentProfile?
+  verifiedDocs   Document[] @relation("VerifiedBy")
+
+  @@index([role])
+}
+
+// ================================
+// STUDENT PROFILE
+// ================================
+
+model StudentProfile {
+  id                   String   @id @default(uuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Personal Details
+  fullName             String
+  dateOfBirth          DateTime
+  gender               Gender
+  bloodGroup           String
+  religion             String
+  aadhaarNumber        String   @unique
+
+  // Contact Details
+  contactNumber        String
+  parentName           String
+  parentContactNumber  String
+  parentEmail          String
+  permanentAddress     String
+  state                String
+
+  // Seat Details
+  seatSource           SeatSource
+  allottedCategory     Category
+  allottedBranch       String
+
+  // Admission Status
+  status               AdmissionStatus @default(DRAFT)
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  documents            Document[]
+
+  @@index([status])
+  @@index([allottedCategory])
+  @@index([seatSource])
+}
+
+// ================================
+// DOCUMENT MODEL
+// ================================
+
+model Document {
+  id             String         @id @default(uuid())
+  studentId      String
+  student        StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  type           DocumentType
+  fileUrl        String
+  status         DocumentStatus @default(PENDING)
+  remark         String?
+
+  verifiedById   String?
+  verifiedBy     User?          @relation("VerifiedBy", fields: [verifiedById], references: [id])
+
+  uploadedAt     DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([studentId])
+  @@index([type])
+  @@index([status])
+}
+
+// ================================
+// AUDIT LOG (For Admin Tracking)
+// ================================
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  action      String
+  performedBy String
+  studentId   String
+
+  createdAt   DateTime @default(now())
+
+  @@index([studentId])
+}
