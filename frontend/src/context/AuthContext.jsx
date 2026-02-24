@@ -73,7 +73,7 @@ export const AuthProvider = ({ children }) => {
 
   }, []);
 
-  const register = useCallback(async (email, password, confirmPassword) => {
+  const register = useCallback(async (email, password, confirmPassword, role) => {
     setError(null);
 
     if (!email || !password || !confirmPassword) {
@@ -89,7 +89,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      await registerApi({ email, password });
+      await registerApi({ email, password, role });
       return await login(email, password);
     } catch (err) {
       const errorMessage = getErrorMessage(err);

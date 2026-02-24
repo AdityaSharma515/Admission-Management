@@ -4,10 +4,13 @@ import { AdmissionProvider } from './context/AdmissionContext';
 import { HomePage } from './pages/HomePage';
 import { LoginRegisterPage } from './pages/LoginRegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import { VerifierDashboardPage } from './pages/VerifierDashboardPage';
 
 const AppContent = () => {
-  const { isAuthenticated, loading } = React.useContext(AuthContext);
+  const { isAuthenticated, loading, user } = React.useContext(AuthContext);
   const [showAuth, setShowAuth] = React.useState(false);
+  const [authDefaults, setAuthDefaults] = React.useState({ mode: 'login', role: 'STUDENT' });
 
   if (loading) {
     return (
@@ -19,16 +22,33 @@ const AppContent = () => {
 
   // Show dashboard if authenticated
   if (isAuthenticated) {
+    if (user?.role === 'ADMIN') {
+      return <AdminDashboardPage />;
+    }
+    if (user?.role === 'VERIFIER') {
+      return <VerifierDashboardPage />;
+    }
     return <DashboardPage />;
   }
 
   // Show login/register page if user clicked "Get Started"
   if (showAuth) {
-    return <LoginRegisterPage />;
+    return <LoginRegisterPage defaultMode={authDefaults.mode} defaultRole={authDefaults.role} />;
   }
 
   // Show homepage by default
-  return <HomePage onGetStarted={() => setShowAuth(true)} />;
+  return (
+    <HomePage
+      onGetStarted={(opts) => {
+        const nextDefaults = {
+          mode: opts?.mode === 'register' ? 'register' : 'login',
+          role: opts?.role || 'STUDENT'
+        };
+        setAuthDefaults(nextDefaults);
+        setShowAuth(true);
+      }}
+    />
+  );
 };
 
 function App() {

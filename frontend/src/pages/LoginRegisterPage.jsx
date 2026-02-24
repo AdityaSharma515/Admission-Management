@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { useAuth } from '../hooks/useContext';
 import { FormGroup, Button, Alert, Card } from '../components/FormComponents';
 
-export const LoginRegisterPage = () => {
-  const [isLogin, setIsLogin] = useState(true);
+export const LoginRegisterPage = ({ defaultMode = 'login', defaultRole = 'STUDENT' }) => {
+  const [isLogin, setIsLogin] = useState(defaultMode !== 'register');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState(defaultRole);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -29,7 +30,7 @@ export const LoginRegisterPage = () => {
           setLoading(false);
           return;
         }
-        const result = await register(email, password, confirmPassword);
+        const result = await register(email, password, confirmPassword, role);
         if (!result.success) {
           setError(result.error);
         }
@@ -82,15 +83,31 @@ export const LoginRegisterPage = () => {
           />
 
           {!isLogin && (
-            <FormGroup
-              label="Confirm Password"
-              name="confirmPassword"
-              type="password"
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Confirm your password"
-            />
+            <>
+              <FormGroup label="Account Role" name="role" required>
+                <select
+                  id="role"
+                  name="role"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition"
+                >
+                  <option value="STUDENT">Student</option>
+                  <option value="VERIFIER">Verifier</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
+              </FormGroup>
+
+              <FormGroup
+                label="Confirm Password"
+                name="confirmPassword"
+                type="password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm your password"
+              />
+            </>
           )}
 
           <Button

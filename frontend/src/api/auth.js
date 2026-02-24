@@ -1,9 +1,13 @@
 import { apiRequest } from './http';
 
-export function registerApi({ email, password }) {
+export function registerApi({ email, password, role }) {
   return apiRequest('/auth/register', {
     method: 'POST',
-    body: { email, password }
+    body: {
+      email,
+      password,
+      ...(role ? { role } : {})
+    }
   });
 }
 

@@ -9,6 +9,7 @@ import { StatusPage } from './StatusPage';
 export const DashboardPage = () => {
   const { admissionData, loadAdmissionData, loading } = useAdmission();
   const [currentStep, setCurrentStep] = useState(1);
+  const [maxStepUnlocked, setMaxStepUnlocked] = useState(1);
 
   useEffect(() => {
     loadAdmissionData();
@@ -22,33 +23,50 @@ export const DashboardPage = () => {
     const requiredDocTypes = [
       'PASSPORT_PHOTO',
       'PROVISIONAL_ADMISSION_LETTER',
-      'AADHAR_CARD',
       'X_MARKSHEET',
-      'XII_MARKSHEET'
+      'XII_MARKSHEET',
+      'JEE_RANK_CARD',
+      'CATEGORY_CERTIFICATE',
+      'MEDICAL_CERTIFICATE',
+      'INSTITUTE_FEE_RECEIPT',
+      'HOSTEL_FEE_RECEIPT',
+      'UNDERTAKING',
+      'CLASS_XII_ELIGIBILITY_FORM',
+      'AADHAR_CARD'
     ];
-
-    let nextStep = 1;
-
-    if (profile?.id) {
-      nextStep = 2;
-    }
 
     const uploadedTypes = documents.map((d) => d.type);
     const docsComplete = requiredDocTypes.every((t) => uploadedTypes.includes(t));
-    if (profile?.id && docsComplete) {
-      nextStep = 3;
+    const paymentStatus = payment.payment_status || payment.status;
+    let computedMaxStep = 1;
+
+    if (profile?.id) {
+      computedMaxStep = 2;
     }
 
-    const paymentStatus = payment.payment_status || payment.status;
+    if (profile?.id && docsComplete) {
+      computedMaxStep = 3;
+    }
+
     if (paymentStatus === 'completed') {
-      nextStep = 4;
+      computedMaxStep = 4;
     }
 
     if (profile?.status && profile.status !== 'DRAFT') {
-      nextStep = 4;
+      computedMaxStep = 4;
     }
 
-    setCurrentStep(nextStep);
+    setMaxStepUnlocked(computedMaxStep);
+
+    // Keep user on their current tab; only correct if they are beyond what is unlocked.
+    setCurrentStep((prev) => {
+      if (prev > computedMaxStep) return computedMaxStep;
+      // On refresh / first load: show documents if profile exists.
+      if (prev === 1 && profile?.id && computedMaxStep < 4) return 2;
+      // If application is submitted/processed, always show Status.
+      if (computedMaxStep === 4 && prev < 4) return 4;
+      return prev;
+    });
   }, [admissionData.profile, admissionData.documents, admissionData.payment]);
 
   if (loading && !admissionData.profile) {
@@ -82,7 +100,7 @@ export const DashboardPage = () => {
                   <li key={item.step}>
                     <button
                       onClick={() => {
-                        if (item.step <= currentStep) {
+                        if (item.step <= maxStepUnlocked) {
                           setCurrentStep(item.step);
                         } else {
                           alert('Complete current step first!');
@@ -91,13 +109,13 @@ export const DashboardPage = () => {
                       className={`w-full text-left px-4 py-2 rounded transition ${
                         currentStep === item.step
                           ? 'bg-primary text-white font-semibold'
-                          : currentStep > item.step
+                          : maxStepUnlocked > item.step
                           ? 'bg-success text-white'
                           : 'bg-gray-100 text-gray-700 cursor-not-allowed'
                       }`}
-                      disabled={item.step > currentStep}
+                      disabled={item.step > maxStepUnlocked}
                     >
-                      {currentStep > item.step ? '✓' : item.step}. {item.label}
+                      {maxStepUnlocked > item.step ? '✓' : item.step}. {item.label}
                     </button>
                   </li>
                 ))}

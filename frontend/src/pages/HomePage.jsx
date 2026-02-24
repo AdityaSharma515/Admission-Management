@@ -72,6 +72,40 @@ export const HomePage = ({ onGetStarted }) => {
           >
             🚀 Start Registration Now
           </Button>
+
+          <div className="mt-6 flex flex-col items-center gap-3">
+            <p className="text-sm text-gray-600">Admin / Verifier portal</p>
+            <div className="flex flex-wrap justify-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => onGetStarted({ mode: 'login', role: 'VERIFIER' })}
+                className="bg-white"
+              >
+                Verifier Login
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => onGetStarted({ mode: 'register', role: 'VERIFIER' })}
+                className="bg-white"
+              >
+                Verifier Signup
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => onGetStarted({ mode: 'login', role: 'ADMIN' })}
+                className="bg-white"
+              >
+                Admin Login
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => onGetStarted({ mode: 'register', role: 'ADMIN' })}
+                className="bg-white"
+              >
+                Admin Signup
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Features Grid */}
