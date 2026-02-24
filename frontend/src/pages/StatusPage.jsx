@@ -3,14 +3,14 @@ import { useAdmission } from '../hooks/useContext';
 import { Stepper } from '../components/Stepper';
 import { Button, Card, Alert, Loading } from '../components/FormComponents';
 
-export const StatusPage = ({ admissionId, onSubmit }) => {
+export const StatusPage = ({ onSubmit }) => {
   const { admissionData, submitAdmission, loading } = useAdmission();
   const [error, setError] = React.useState('');
   const [success, setSuccess] = React.useState('');
 
-  const admission = admissionData.admission || {};
-  const submission = admissionData.submission || {};
-  const isSubmitted = submission.submission_status === 'submitted';
+  const profile = admissionData.profile;
+  const status = profile?.status || 'DRAFT';
+  const isSubmitted = status !== 'DRAFT';
 
   const handleSubmit = async () => {
     if (
@@ -20,7 +20,7 @@ export const StatusPage = ({ admissionId, onSubmit }) => {
     ) {
       setError('');
       setSuccess('');
-      const result = await submitAdmission(admissionId);
+      const result = await submitAdmission(null);
       if (result.success) {
         setSuccess('Admission submitted successfully!');
         setTimeout(() => onSubmit?.(), 1500);
@@ -45,30 +45,18 @@ export const StatusPage = ({ admissionId, onSubmit }) => {
         {isSubmitted ? (
           <div className="text-center py-8">
             <div className="text-6xl mb-4">📋</div>
-            <h3 className="text-2xl font-bold text-success mb-2">Admission Submitted</h3>
-            <p className="text-gray-600 mb-8">Your admission form has been successfully submitted.</p>
+            <h3 className="text-2xl font-bold text-success mb-2">Application Status</h3>
+            <p className="text-gray-600 mb-8">Your application is currently: <span className="font-semibold">{status}</span></p>
 
             <div className="bg-gray-50 rounded-lg p-6 text-left max-w-md mx-auto">
               <div className="flex justify-between py-3 border-b border-gray-200">
-                <span className="font-semibold text-gray-700">Submission Status:</span>
-                <span className="text-gray-600">{submission.submission_status}</span>
+                <span className="font-semibold text-gray-700">Current Status:</span>
+                <span className="text-gray-600">{status}</span>
               </div>
-              <div className="flex justify-between py-3 border-b border-gray-200">
-                <span className="font-semibold text-gray-700">Admin Status:</span>
-                <span className="text-gray-600 capitalize">
-                  {submission.admin_status?.replace('_', ' ')}
-                </span>
-              </div>
-              {submission.admin_remarks && (
-                <div className="flex justify-between py-3 border-b border-gray-200">
-                  <span className="font-semibold text-gray-700">Remarks:</span>
-                  <span className="text-gray-600">{submission.admin_remarks}</span>
-                </div>
-              )}
               <div className="flex justify-between py-3">
-                <span className="font-semibold text-gray-700">Submitted On:</span>
+                <span className="font-semibold text-gray-700">Last Updated:</span>
                 <span className="text-gray-600">
-                  {new Date(submission.submitted_at).toLocaleDateString()}
+                  {profile?.updatedAt ? new Date(profile.updatedAt).toLocaleDateString() : '-'}
                 </span>
               </div>
             </div>

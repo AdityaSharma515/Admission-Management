@@ -2,25 +2,24 @@ import React, { useEffect, useState } from 'react';
 import { useAdmission } from '../hooks/useContext';
 import { Stepper } from '../components/Stepper';
 import { Button, Card, Alert, Loading } from '../components/FormComponents';
+import { API_ORIGIN } from '../api/http';
 
-export const DocumentsPage = ({ admissionId, onNext }) => {
+export const DocumentsPage = ({ onNext }) => {
   const { admissionData, uploadDocument, deleteDocument, loading } = useAdmission();
   const [uploadedDocs, setUploadedDocs] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   const requiredDocs = [
-    { type: 'admit_card', label: 'JEE Admit Card' },
-    { type: 'aadhar_card', label: 'Aadhar Card' },
-    { type: 'seat_allotment', label: 'Seat Allotment Letter' },
-    { type: 'marksheet_10', label: '10th Marksheet' },
-    { type: 'marksheet_12', label: '12th Marksheet' },
+    { type: 'PASSPORT_PHOTO', label: 'Passport Photo' },
+    { type: 'PROVISIONAL_ADMISSION_LETTER', label: 'Provisional Admission Letter / Seat Allotment Letter' },
+    { type: 'AADHAR_CARD', label: 'Aadhaar Card' },
+    { type: 'X_MARKSHEET', label: 'Class 10 Marksheet' },
+    { type: 'XII_MARKSHEET', label: 'Class 12 Marksheet' },
   ];
 
   useEffect(() => {
-    if (admissionData.documents) {
-      setUploadedDocs(admissionData.documents);
-    }
+    setUploadedDocs(admissionData.documents || []);
   }, [admissionData.documents]);
 
   const handleFileUpload = async (e, docType) => {
@@ -34,14 +33,14 @@ export const DocumentsPage = ({ admissionId, onNext }) => {
       return;
     }
 
-    // Validate file size (10MB max)
-    if (file.size > 10 * 1024 * 1024) {
-      setError('File size exceeds 10MB limit.');
+    // Validate file size (5MB max, per backend multer limit)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('File size exceeds 5MB limit.');
       return;
     }
 
     setError('');
-    const result = await uploadDocument(admissionId, docType, file);
+    const result = await uploadDocument(null, docType, file);
     if (result.success) {
       setSuccess(`${docType} uploaded successfully!`);
       setTimeout(() => setSuccess(''), 2000);
@@ -52,7 +51,7 @@ export const DocumentsPage = ({ admissionId, onNext }) => {
 
   const handleDeleteDocument = async (docId) => {
     if (window.confirm('Are you sure you want to delete this document?')) {
-      const result = await deleteDocument(admissionId, docId);
+      const result = await deleteDocument(null, docId);
       if (result.success) {
         setSuccess('Document deleted successfully!');
         setTimeout(() => setSuccess(''), 2000);
@@ -124,10 +123,20 @@ export const DocumentsPage = ({ admissionId, onNext }) => {
                 ) : (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex justify-between items-center">
                     <div>
-                      <p className="font-semibold text-success">✅ {uploaded.name}</p>
+                      <p className="font-semibold text-success">✅ {uploaded.type}</p>
                       <p className="text-sm text-gray-500">
-                        {(uploaded.size / 1024).toFixed(2)} KB
+                        Status: {uploaded.status}
                       </p>
+                      {uploaded.fileUrl && (
+                        <a
+                          href={`${API_ORIGIN}${uploaded.fileUrl}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary font-semibold hover:underline"
+                        >
+                          View uploaded file
+                        </a>
+                      )}
                     </div>
                     <button
                       onClick={() => handleDeleteDocument(uploaded.id)}

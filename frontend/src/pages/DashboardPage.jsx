@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../hooks/useContext';
 import { useAdmission } from '../hooks/useContext';
 import { Navbar } from '../components/Navbar';
 import { PersonalDetailsPage } from './PersonalDetailsPage';
@@ -8,23 +7,51 @@ import { PaymentPage } from './PaymentPage';
 import { StatusPage } from './StatusPage';
 
 export const DashboardPage = () => {
-  const { user, admissionId } = useAuth();
   const { admissionData, loadAdmissionData, loading } = useAdmission();
   const [currentStep, setCurrentStep] = useState(1);
 
   useEffect(() => {
-    if (admissionId) {
-      loadAdmissionData(admissionId);
-    }
-  }, [admissionId, loadAdmissionData]);
+    loadAdmissionData();
+  }, [loadAdmissionData]);
 
   useEffect(() => {
-    if (admissionData.admission) {
-      setCurrentStep(admissionData.admission.step || 1);
-    }
-  }, [admissionData.admission]);
+    const profile = admissionData.profile;
+    const documents = admissionData.documents || [];
+    const payment = admissionData.payment || {};
 
-  if (loading && !admissionData.admission) {
+    const requiredDocTypes = [
+      'PASSPORT_PHOTO',
+      'PROVISIONAL_ADMISSION_LETTER',
+      'AADHAR_CARD',
+      'X_MARKSHEET',
+      'XII_MARKSHEET'
+    ];
+
+    let nextStep = 1;
+
+    if (profile?.id) {
+      nextStep = 2;
+    }
+
+    const uploadedTypes = documents.map((d) => d.type);
+    const docsComplete = requiredDocTypes.every((t) => uploadedTypes.includes(t));
+    if (profile?.id && docsComplete) {
+      nextStep = 3;
+    }
+
+    const paymentStatus = payment.payment_status || payment.status;
+    if (paymentStatus === 'completed') {
+      nextStep = 4;
+    }
+
+    if (profile?.status && profile.status !== 'DRAFT') {
+      nextStep = 4;
+    }
+
+    setCurrentStep(nextStep);
+  }, [admissionData.profile, admissionData.documents, admissionData.payment]);
+
+  if (loading && !admissionData.profile) {
     return (
       <div className="min-h-screen bg-gray-100">
         <Navbar />
@@ -82,25 +109,21 @@ export const DashboardPage = () => {
           <div className="lg:col-span-3">
             {currentStep === 1 && (
               <PersonalDetailsPage
-                admissionId={admissionId}
                 onNext={() => setCurrentStep(2)}
               />
             )}
             {currentStep === 2 && (
               <DocumentsPage
-                admissionId={admissionId}
                 onNext={() => setCurrentStep(3)}
               />
             )}
             {currentStep === 3 && (
               <PaymentPage
-                admissionId={admissionId}
                 onNext={() => setCurrentStep(4)}
               />
             )}
             {currentStep === 4 && (
               <StatusPage
-                admissionId={admissionId}
                 onSubmit={() => setCurrentStep(4)}
               />
             )}

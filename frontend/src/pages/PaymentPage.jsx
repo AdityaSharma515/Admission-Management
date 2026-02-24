@@ -1,20 +1,22 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useAdmission } from '../hooks/useContext';
 import { Stepper } from '../components/Stepper';
 import { Button, Card, Alert, Loading } from '../components/FormComponents';
 
-export const PaymentPage = ({ admissionId, onNext }) => {
+export const PaymentPage = ({ onNext }) => {
   const { admissionData, generatePaymentLink, confirmPayment, loading } = useAdmission();
   const [error, setError] = React.useState('');
   const [success, setSuccess] = React.useState('');
 
   const payment = admissionData.payment || {};
-  const paymentComplete = payment.payment_status === 'completed';
+  const paymentLink = payment.payment_link || payment.link || payment.paymentLink;
+  const paymentStatus = payment.payment_status || payment.status;
+  const paymentComplete = paymentStatus === 'completed';
 
   const handleGenerateLink = async () => {
     setError('');
     setSuccess('');
-    const result = await generatePaymentLink(admissionId);
+    const result = await generatePaymentLink(null);
     if (result.success) {
       setSuccess('Payment link generated successfully! Redirecting...');
       setTimeout(() => onNext(), 1500);
@@ -31,7 +33,7 @@ export const PaymentPage = ({ admissionId, onNext }) => {
     ) {
       setError('');
       setSuccess('');
-      const result = await confirmPayment(admissionId);
+      const result = await confirmPayment(null);
       if (result.success) {
         setSuccess('Payment confirmed! Proceeding to status...');
         setTimeout(() => onNext(), 1500);
@@ -41,7 +43,7 @@ export const PaymentPage = ({ admissionId, onNext }) => {
     }
   };
 
-  if (loading && !payment.payment_link) return <Loading />;
+  if (loading && !paymentLink) return <Loading />;
 
   return (
     <div>
@@ -64,18 +66,18 @@ export const PaymentPage = ({ admissionId, onNext }) => {
             <div className="inline-block px-4 py-2 bg-success text-white rounded-lg font-semibold">
               ✅ Payment Completed
             </div>
-          ) : payment.payment_status === 'pending' && payment.payment_link ? (
+          ) : paymentStatus === 'pending' && paymentLink ? (
             <div className="inline-block px-4 py-2 bg-warning text-gray-800 rounded-lg font-semibold">
               ⏳ Payment Pending
             </div>
           ) : null}
         </div>
 
-        {payment.payment_link && (
+        {paymentLink && (
           <div className="mb-6">
             <h3 className="font-semibold text-gray-700 mb-2">Payment Link:</h3>
             <div className="bg-gray-100 rounded-lg p-4 font-mono text-sm break-all">
-              {payment.payment_link}
+              {paymentLink}
             </div>
           </div>
         )}
@@ -93,7 +95,7 @@ export const PaymentPage = ({ admissionId, onNext }) => {
         )}
 
         <div className="flex gap-4 justify-end pt-6">
-          {!payment.payment_link ? (
+          {!paymentLink ? (
             <Button
               variant="primary"
               onClick={handleGenerateLink}
@@ -108,7 +110,7 @@ export const PaymentPage = ({ admissionId, onNext }) => {
           ) : (
             <>
               <a
-                href={payment.payment_link}
+                href={paymentLink}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-6 py-2 bg-secondary text-white rounded-lg font-semibold hover:bg-red-600 transition"

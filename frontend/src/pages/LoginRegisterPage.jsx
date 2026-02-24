@@ -12,14 +12,14 @@ export const LoginRegisterPage = () => {
 
   const { login, register } = useAuth();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
       if (isLogin) {
-        const result = login(email, password);
+        const result = await login(email, password);
         if (!result.success) {
           setError(result.error);
         }
@@ -29,7 +29,7 @@ export const LoginRegisterPage = () => {
           setLoading(false);
           return;
         }
-        const result = register(email, password, confirmPassword);
+        const result = await register(email, password, confirmPassword);
         if (!result.success) {
           setError(result.error);
         }
