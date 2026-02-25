@@ -107,3 +107,49 @@ exports.approveAllDocuments = async (req, res) => {
     res.status(500).json({ message: "Server error" })
   }
 }
+
+// Approve selected documents (array of document IDs) for a student
+exports.approveMultipleDocuments = async (req, res) => {
+  try {
+    const studentId = req.params.id
+    const { documentIds, remark } = req.body
+
+    if (!Array.isArray(documentIds) || documentIds.length === 0) {
+      return res.status(400).json({ message: "documentIds (non-empty array) required" })
+    }
+
+    const student = await prisma.studentProfile.findUnique({ where: { id: studentId } })
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" })
+    }
+
+    // Ensure we only update documents that belong to this student
+    const result = await prisma.document.updateMany({
+      where: {
+        id: { in: documentIds },
+        studentId
+      },
+      data: {
+        status: DocumentStatus.APPROVED,
+        verifiedById: req.user.id,
+        remark: remark || undefined
+      }
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        action: `BULK_SELECTED_DOCUMENT_APPROVAL:${documentIds.join(',')}`,
+        performedBy: req.user.id,
+        studentId: studentId
+      }
+    })
+
+    // Fetch updated documents to return
+    const documents = await prisma.document.findMany({ where: { id: { in: documentIds }, studentId } })
+
+    res.json({ message: "Selected documents approved", count: result.count, documents })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: "Server error" })
+  }
+}
