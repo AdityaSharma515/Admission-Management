@@ -11,6 +11,12 @@ const {
   submitApplication
 } = require("../controllers/student.controller")
 
+const {
+  getPayment,
+  generatePaymentLink,
+  confirmPayment
+} = require("../controllers/payment.controller")
+
 const { uploadDocument } = require("../controllers/document.controller")
 
 router.use(protect)
@@ -20,5 +26,10 @@ router.post("/profile", createProfile)
 router.get("/profile", getProfile)
 router.put("/profile", updateProfile)
 router.put("/submit", submitApplication)
+
+// Payment endpoints (stubbed: always succeed)
+router.get("/payment", getPayment)
+router.post("/payment/generate", generatePaymentLink)
+router.post("/payment/confirm", confirmPayment)
 
 module.exports = router
