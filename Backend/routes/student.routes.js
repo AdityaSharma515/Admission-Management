@@ -14,7 +14,8 @@ const {
 const {
   getPayment,
   generatePaymentLink,
-  confirmPayment
+  confirmPayment,
+  submitReceipt
 } = require("../controllers/payment.controller")
 
 const { uploadDocument } = require("../controllers/document.controller")
@@ -31,5 +32,6 @@ router.put("/submit", submitApplication)
 router.get("/payment", getPayment)
 router.post("/payment/generate", generatePaymentLink)
 router.post("/payment/confirm", confirmPayment)
+router.post("/payment/submit-receipt", upload.single("file"), submitReceipt)
 
 module.exports = router

@@ -89,3 +89,60 @@ exports.confirmPayment = async (req, res) => {
     res.status(500).json({ message: "Server error" })
   }
 }
+
+// Submit fee receipt with transaction id and amount
+exports.submitReceipt = async (req, res) => {
+  try {
+    const { transactionId, amount, type } = req.body
+
+    if (!transactionId) {
+      return res.status(400).json({ message: "Transaction ID is required" })
+    }
+
+    if (!amount) {
+      return res.status(400).json({ message: "Amount is required" })
+    }
+
+    const amountNum = parseFloat(amount)
+    if (isNaN(amountNum) || amountNum <= 0) {
+      return res.status(400).json({ message: "Invalid amount" })
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" })
+    }
+
+    const student = await prisma.studentProfile.findUnique({
+      where: { userId: req.user.id }
+    })
+
+    if (!student) {
+      return res.status(404).json({ message: "Student profile not found" })
+    }
+
+    const docType = type || "INSTITUTE_FEE_RECEIPT"
+
+    const document = await prisma.document.create({
+      data: {
+        type: docType,
+        fileUrl: `/uploads/${req.file.filename}`,
+        studentId: student.id,
+        transactionId,
+        amount: amountNum
+      }
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        action: "FEE_RECEIPT_SUBMITTED",
+        performedBy: req.user.id,
+        studentId: student.id
+      }
+    })
+
+    res.status(201).json({ message: "Fee receipt submitted successfully", document })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: "Server error" })
+  }
+}

@@ -54,7 +54,23 @@ exports.getProfile = async (req, res) => {
   try {
     const profile = await prisma.studentProfile.findUnique({
       where: { userId: req.user.id },
-      include: { documents: true }
+      include: {
+        user: { select: { email: true } },
+        verifier: { select: { id: true, email: true } },
+        documents: {
+          select: {
+            id: true,
+            type: true,
+            fileUrl: true,
+            status: true,
+            remark: true,
+            transactionId: true,
+            amount: true,
+            verifiedBy: { select: { id: true, email: true } },
+            uploadedAt: true
+          }
+        }
+      }
     })
 
     res.json(profile)

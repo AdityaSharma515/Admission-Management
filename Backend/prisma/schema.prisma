@@ -89,6 +89,7 @@ model User {
 
   studentProfile StudentProfile?
   verifiedDocs   Document[] @relation("VerifiedBy")
+  assignedStudents StudentProfile[] @relation("AssignedVerifier")
 
   @@index([role])
 }
@@ -130,6 +131,8 @@ model StudentProfile {
   updatedAt            DateTime @updatedAt
 
   documents            Document[]
+  verifierId           String?
+  verifier             User?    @relation("AssignedVerifier", fields: [verifierId], references: [id])
 
   @@index([status])
   @@index([allottedCategory])
@@ -149,6 +152,10 @@ model Document {
   fileUrl        String
   status         DocumentStatus @default(PENDING)
   remark         String?
+
+  // Optional payment metadata for fee receipts
+  transactionId  String?
+  amount         Float?
 
   verifiedById   String?
   verifiedBy     User?          @relation("VerifiedBy", fields: [verifiedById], references: [id])

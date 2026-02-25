@@ -7,6 +7,8 @@ const {
   getSingleStudent,
   verifyDocument,
   finalDecision
+  ,
+  approveAllDocuments
 } = require("../controllers/verifier.controller")
 
 // Only VERIFIER & ADMIN can access
@@ -20,5 +22,6 @@ router.get("/student/:id", getSingleStudent)
 router.put("/document/:id", verifyDocument)
 
 router.put("/final-decision/:studentId", finalDecision)
+router.put("/student/:id/approve-all", approveAllDocuments)
 
 module.exports = router
