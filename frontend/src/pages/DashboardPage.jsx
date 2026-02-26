@@ -11,6 +11,24 @@ export const DashboardPage = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [maxStepUnlocked, setMaxStepUnlocked] = useState(1);
 
+  const rejectedDocsCount = React.useMemo(() => {
+    const documents = Array.isArray(admissionData.documents) ? admissionData.documents : [];
+    const latestByType = new Map();
+    for (const d of documents) {
+      if (!d?.type) continue;
+      const key = d.type;
+      const current = latestByType.get(key);
+      const dTime = new Date(d.uploadedAt || d.createdAt || 0).getTime();
+      const cTime = new Date(current?.uploadedAt || current?.createdAt || 0).getTime();
+      if (!current || dTime >= cTime) latestByType.set(key, d);
+    }
+    let count = 0;
+    for (const doc of latestByType.values()) {
+      if (doc?.status === 'REJECTED') count += 1;
+    }
+    return count;
+  }, [admissionData.documents]);
+
   useEffect(() => {
     loadAdmissionData();
   }, [loadAdmissionData]);
@@ -28,8 +46,6 @@ export const DashboardPage = () => {
       'JEE_RANK_CARD',
       'CATEGORY_CERTIFICATE',
       'MEDICAL_CERTIFICATE',
-      'INSTITUTE_FEE_RECEIPT',
-      'HOSTEL_FEE_RECEIPT',
       'UNDERTAKING',
       'CLASS_XII_ELIGIBILITY_FORM',
       'AADHAR_CARD'
@@ -93,7 +109,7 @@ export const DashboardPage = () => {
               <ul className="space-y-2">
                 {[
                   { step: 1, label: 'Personal Details' },
-                  { step: 2, label: 'Documents' },
+                  { step: 2, label: 'Documents', rejectedCount: rejectedDocsCount },
                   { step: 3, label: 'Payment' },
                   { step: 4, label: 'Status' },
                 ].map((item) => (
@@ -115,7 +131,16 @@ export const DashboardPage = () => {
                       }`}
                       disabled={item.step > maxStepUnlocked}
                     >
-                      {maxStepUnlocked > item.step ? '✓' : item.step}. {item.label}
+                      <div className="flex items-center justify-between gap-2">
+                        <span>
+                          {maxStepUnlocked > item.step ? '✓' : item.step}. {item.label}
+                        </span>
+                        {item.step === 2 && (item.rejectedCount || 0) > 0 && (
+                          <span className="text-xs font-semibold bg-danger text-white px-2 py-0.5 rounded-full">
+                            Rejected: {item.rejectedCount}
+                          </span>
+                        )}
+                      </div>
                     </button>
                   </li>
                 ))}
@@ -143,6 +168,7 @@ export const DashboardPage = () => {
             {currentStep === 4 && (
               <StatusPage
                 onSubmit={() => setCurrentStep(4)}
+                onGoToDocuments={() => setCurrentStep(2)}
               />
             )}
           </div>

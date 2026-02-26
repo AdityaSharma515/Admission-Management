@@ -13,6 +13,13 @@ export const LoginRegisterPage = ({ defaultMode = 'login', defaultRole = 'STUDEN
 
   const { login, register } = useAuth();
 
+  React.useEffect(() => {
+    // Verifier accounts must be created by Admin via admin dashboard.
+    if (defaultRole === 'VERIFIER') {
+      setRole('STUDENT');
+    }
+  }, [defaultRole]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -30,6 +37,13 @@ export const LoginRegisterPage = ({ defaultMode = 'login', defaultRole = 'STUDEN
           setLoading(false);
           return;
         }
+
+        if (role === 'VERIFIER') {
+          setError('Verifier accounts can only be created by an Admin. Please contact Admin.');
+          setLoading(false);
+          return;
+        }
+
         const result = await register(email, password, confirmPassword, role);
         if (!result.success) {
           setError(result.error);
@@ -93,7 +107,6 @@ export const LoginRegisterPage = ({ defaultMode = 'login', defaultRole = 'STUDEN
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition"
                 >
                   <option value="STUDENT">Student</option>
-                  <option value="VERIFIER">Verifier</option>
                   <option value="ADMIN">Admin</option>
                 </select>
               </FormGroup>

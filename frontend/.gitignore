@@ -8,8 +8,11 @@ yarn.lock
 admission_system.db
 
 # Uploads
-public/uploads/*
+public/uploads/
 !public/uploads/.gitkeep
+
+# Ignore any uploads folders anywhere (e.g. src/uploads, public/uploads)
+**/uploads/
 
 # IDE
 .vscode/

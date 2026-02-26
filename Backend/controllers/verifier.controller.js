@@ -3,8 +3,19 @@ const prisma = new PrismaClient()
 
 exports.getStudentsForVerification = async (req, res) => {
   try {
+    const where = {}
+    // Verifiers should see only students assigned to them (all statuses).
+    if (req.user?.role === 'VERIFIER') {
+      where.verifierId = req.user.id
+    }
+
     const students = await prisma.studentProfile.findMany({
-      where: { status: AdmissionStatus.SUBMITTED }
+      where,
+      include: {
+        user: { select: { email: true } },
+        verifier: { select: { id: true, email: true } }
+      },
+      orderBy: [{ updatedAt: 'desc' }]
     })
 
     res.json(students)
@@ -18,8 +29,23 @@ exports.getSingleStudent = async (req, res) => {
   try {
     const student = await prisma.studentProfile.findUnique({
       where: { id: req.params.id },
-      include: { documents: true }
+      include: {
+        user: { select: { email: true } },
+        verifier: { select: { id: true, email: true } },
+        documents: {
+          include: { verifiedBy: { select: { id: true, email: true } } },
+          orderBy: { uploadedAt: 'desc' }
+        }
+      }
     })
+
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' })
+    }
+
+    if (req.user?.role === 'VERIFIER' && student.verifierId !== req.user.id) {
+      return res.status(403).json({ message: 'Access denied: student not assigned to you' })
+    }
 
     res.json(student)
 

@@ -6,6 +6,7 @@ import {
   generateStudentPaymentLink,
   getStudentPayment,
   getStudentProfile,
+  submitStudentPaymentReceipt,
   submitStudentApplication,
   updateStudentProfile,
   uploadStudentDocument
@@ -197,6 +198,32 @@ export const AdmissionProvider = ({ children }) => {
     [token]
   );
 
+    const submitPaymentReceipt = useCallback(
+      async ({ type, transactionId, amount, file }) => {
+        if (!token) {
+          const errorMessage = 'Not authenticated';
+          setError(errorMessage);
+          return { success: false, error: errorMessage };
+        }
+
+        setLoading(true);
+        setError(null);
+
+        try {
+          await submitStudentPaymentReceipt(token, { type, transactionId, amount, file });
+          await loadAdmissionData();
+          return { success: true };
+        } catch (err) {
+          const errorMessage = getErrorMessage(err);
+          setError(errorMessage);
+          return { success: false, error: errorMessage };
+        } finally {
+          setLoading(false);
+        }
+      },
+      [token, loadAdmissionData]
+    );
+
   const submitAdmission = useCallback(
     async (_admissionId) => {
       if (!token) {
@@ -233,6 +260,7 @@ export const AdmissionProvider = ({ children }) => {
     deleteDocument,
     generatePaymentLink,
     confirmPayment,
+    submitPaymentReceipt,
     submitAdmission,
   };
 

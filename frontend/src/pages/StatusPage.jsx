@@ -3,7 +3,7 @@ import { useAdmission } from '../hooks/useContext';
 import { Stepper } from '../components/Stepper';
 import { Button, Card, Alert, Loading } from '../components/FormComponents';
 
-export const StatusPage = ({ onSubmit }) => {
+export const StatusPage = ({ onSubmit, onGoToDocuments }) => {
   const { admissionData, submitAdmission, loading } = useAdmission();
   const [error, setError] = React.useState('');
   const [success, setSuccess] = React.useState('');
@@ -11,6 +11,24 @@ export const StatusPage = ({ onSubmit }) => {
   const profile = admissionData.profile;
   const status = profile?.status || 'DRAFT';
   const isSubmitted = status !== 'DRAFT';
+
+  const rejectedDocs = React.useMemo(() => {
+    const documents = Array.isArray(admissionData.documents) ? admissionData.documents : [];
+    const latestByType = new Map();
+
+    for (const d of documents) {
+      if (!d?.type) continue;
+      const key = d.type;
+      const current = latestByType.get(key);
+      const dTime = new Date(d.uploadedAt || d.createdAt || 0).getTime();
+      const cTime = new Date(current?.uploadedAt || current?.createdAt || 0).getTime();
+      if (!current || dTime >= cTime) latestByType.set(key, d);
+    }
+
+    return Array.from(latestByType.values())
+      .filter((d) => d?.status === 'REJECTED')
+      .sort((a, b) => String(a.type || '').localeCompare(String(b.type || '')));
+  }, [admissionData.documents]);
 
   const handleSubmit = async () => {
     if (
@@ -41,6 +59,44 @@ export const StatusPage = ({ onSubmit }) => {
 
       <Card>
         <h2 className="text-2xl font-bold text-primary mb-6">Step 4: Submission Status</h2>
+
+        {rejectedDocs.length > 0 && (
+          <div className="mb-6">
+            <Alert type="error">
+              <div className="font-semibold mb-1">Some documents were rejected by the verifier.</div>
+              <div className="text-sm">Please reupload the rejected documents from the Documents step.</div>
+            </Alert>
+
+            <div className="mt-3 overflow-auto border border-gray-200 rounded-lg">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="text-left border-b">
+                    <th className="py-2 px-3">Document</th>
+                    <th className="py-2 px-3">Remark</th>
+                    <th className="py-2 px-3">Rejected By</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rejectedDocs.map((d) => (
+                    <tr key={d.id || d.type} className="border-b last:border-b-0">
+                      <td className="py-2 px-3 whitespace-nowrap font-semibold text-gray-800">{d.type}</td>
+                      <td className="py-2 px-3">{d.remark || '-'}</td>
+                      <td className="py-2 px-3 whitespace-nowrap">{d.verifiedBy?.email || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {typeof onGoToDocuments === 'function' && (
+              <div className="mt-4 flex justify-end">
+                <Button variant="primary" onClick={onGoToDocuments}>
+                  Go to Documents (Reupload)
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
 
         {isSubmitted ? (
           <div className="text-center py-8">

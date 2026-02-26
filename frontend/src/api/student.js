@@ -65,3 +65,17 @@ export function confirmStudentPayment(token) {
     token
   });
 }
+
+export function submitStudentPaymentReceipt(token, { type, transactionId, amount, file }) {
+  const form = new FormData();
+  if (type) form.append('type', type);
+  form.append('transactionId', transactionId);
+  form.append('amount', String(amount));
+  form.append('file', file);
+
+  return apiRequest('/student/payment/submit-receipt', {
+    method: 'POST',
+    token,
+    body: form
+  });
+}

@@ -85,13 +85,6 @@ export const HomePage = ({ onGetStarted }) => {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => onGetStarted({ mode: 'register', role: 'VERIFIER' })}
-                className="bg-white"
-              >
-                Verifier Signup
-              </Button>
-              <Button
-                variant="outline"
                 onClick={() => onGetStarted({ mode: 'login', role: 'ADMIN' })}
                 className="bg-white"
               >

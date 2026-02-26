@@ -23,3 +23,11 @@ export function setFinalDecision(token, studentId, decision) {
     body: { decision }
   });
 }
+
+export function approveAllDocuments(token, studentId, remark) {
+  return apiRequest(`/verifier/student/${studentId}/approve-all`, {
+    method: 'PUT',
+    token,
+    body: remark ? { remark } : {}
+  });
+}
