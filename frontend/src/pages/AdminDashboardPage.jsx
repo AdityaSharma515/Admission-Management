@@ -35,6 +35,14 @@ export const AdminDashboardPage = () => {
   const [rejectedStudent, setRejectedStudent] = useState(null);
   const [rejectedDocs, setRejectedDocs] = useState([]);
 
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentStudent, setPaymentStudent] = useState(null);
+  const [paymentDocs, setPaymentDocs] = useState({
+    INSTITUTE_FEE_RECEIPT: null,
+    HOSTEL_FEE_RECEIPT: null
+  });
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -262,6 +270,42 @@ export const AdminDashboardPage = () => {
     }
   };
 
+  const pickLatestDocByType = (docs, type) => {
+    const rows = (Array.isArray(docs) ? docs : []).filter((d) => d?.type === type);
+    if (rows.length === 0) return null;
+    rows.sort((a, b) => {
+      const at = a?.uploadedAt ? new Date(a.uploadedAt).getTime() : 0;
+      const bt = b?.uploadedAt ? new Date(b.uploadedAt).getTime() : 0;
+      return bt - at;
+    });
+    return rows[0] || null;
+  };
+
+  const openPaymentModal = async (studentId) => {
+    if (!token || !studentId) return;
+    setError('');
+    setSuccess('');
+    setShowPaymentModal(true);
+    setPaymentLoading(true);
+    setPaymentStudent(null);
+    setPaymentDocs({ INSTITUTE_FEE_RECEIPT: null, HOSTEL_FEE_RECEIPT: null });
+
+    try {
+      const details = await getStudentDetails(token, studentId);
+      const docs = Array.isArray(details?.documents) ? details.documents : [];
+      setPaymentStudent(details);
+      setPaymentDocs({
+        INSTITUTE_FEE_RECEIPT: pickLatestDocByType(docs, 'INSTITUTE_FEE_RECEIPT'),
+        HOSTEL_FEE_RECEIPT: pickLatestDocByType(docs, 'HOSTEL_FEE_RECEIPT')
+      });
+    } catch (err) {
+      setError(getErrorMessage(err));
+      setShowPaymentModal(false);
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
   if (user?.role !== 'ADMIN') {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -351,6 +395,7 @@ export const AdminDashboardPage = () => {
                           <th className="py-2 pr-4">Status</th>
                           <th className="py-2 pr-4">Assigned Verifier</th>
                           <th className="py-2 pr-4">Rejected Docs</th>
+                          <th className="py-2 pr-4">Payment Details</th>
                           <th className="py-2 pr-4">Branch</th>
                         </tr>
                       </thead>
@@ -387,6 +432,17 @@ export const AdminDashboardPage = () => {
                                 ) : (
                                   <span className="text-gray-500">0</span>
                                 )}
+                              </td>
+                              <td className="py-2 pr-4 whitespace-nowrap">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openPaymentModal(s.id);
+                                  }}
+                                  className="text-primary font-semibold hover:underline"
+                                >
+                                  View
+                                </button>
                               </td>
                               <td className="py-2 pr-4 whitespace-nowrap">{s.allottedBranch || '-'}</td>
                             </tr>
@@ -601,6 +657,91 @@ export const AdminDashboardPage = () => {
                                 </td>
                               </tr>
                             ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {showPaymentModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+                <div
+                  className="absolute inset-0 bg-black/40"
+                  onClick={() => {
+                    if (paymentLoading) return;
+                    setShowPaymentModal(false);
+                  }}
+                />
+
+                <div className="relative w-full max-w-3xl">
+                  <Card>
+                    <div className="flex items-start justify-between gap-4 mb-4">
+                      <div>
+                        <h3 className="text-lg font-bold text-primary">Student Payment Details</h3>
+                        <p className="text-xs text-gray-600">
+                          {paymentStudent?.fullName || '-'} ({paymentStudent?.user?.email || '-'})
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowPaymentModal(false)}
+                        disabled={paymentLoading}
+                      >
+                        Close
+                      </Button>
+                    </div>
+
+                    {paymentLoading ? (
+                      <Loading />
+                    ) : (
+                      <div className="overflow-auto border border-gray-200 rounded-lg">
+                        <table className="min-w-full text-sm">
+                          <thead>
+                            <tr className="text-left border-b">
+                              <th className="py-2 px-3">Receipt Type</th>
+                              <th className="py-2 px-3">Ref No</th>
+                              <th className="py-2 px-3">Amount</th>
+                              <th className="py-2 px-3">Status</th>
+                              <th className="py-2 px-3">Receipt</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {['INSTITUTE_FEE_RECEIPT', 'HOSTEL_FEE_RECEIPT'].map((type) => {
+                              const doc = paymentDocs?.[type] || null;
+                              return (
+                                <tr key={type} className="border-b last:border-b-0">
+                                  <td className="py-2 px-3 whitespace-nowrap font-semibold text-gray-800">
+                                    {type}
+                                  </td>
+                                  <td className="py-2 px-3 whitespace-nowrap">
+                                    {doc?.transactionId || <span className="text-gray-500">-</span>}
+                                  </td>
+                                  <td className="py-2 px-3 whitespace-nowrap">
+                                    {typeof doc?.amount === 'number' ? doc.amount : <span className="text-gray-500">-</span>}
+                                  </td>
+                                  <td className="py-2 px-3 whitespace-nowrap">
+                                    {doc?.status || <span className="text-gray-500">NOT UPLOADED</span>}
+                                  </td>
+                                  <td className="py-2 px-3 whitespace-nowrap">
+                                    {doc?.fileUrl ? (
+                                      <a
+                                        href={`${API_ORIGIN}${doc.fileUrl}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-primary font-semibold hover:underline"
+                                      >
+                                        View
+                                      </a>
+                                    ) : (
+                                      <span className="text-gray-500">-</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
