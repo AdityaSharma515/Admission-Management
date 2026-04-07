@@ -18,11 +18,12 @@ const {
   submitReceipt
 } = require("../controllers/payment.controller")
 
-const { uploadDocument } = require("../controllers/document.controller")
+const { uploadDocument, deleteDocument } = require("../controllers/document.controller")
 
 router.use(protect)
 router.use(authorize("STUDENT"))
 router.post("/upload-document",upload.single("file"),uploadDocument)
+router.delete("/document/:id", deleteDocument)
 router.post("/profile", createProfile)
 router.get("/profile", getProfile)
 router.put("/profile", updateProfile)
